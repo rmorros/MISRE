@@ -7,7 +7,7 @@ from random import shuffle
 import pylab
 from mpl_toolkits.mplot3d import Axes3D
 import platform
-
+from closest_points_in_plane import closest_point_in_plane
 
 LIB_FOLDER = '../../cpp/bin'
 LIB_NAME   = 'plane'
@@ -148,39 +148,47 @@ def run(iteration):
         print ('{}x + {}y + {}z + {} = 0'.format(a,b,c,d)) 
 
         Xin = []; Yin = []; Zin =[]
+        rmse = 0.0 # JRMR
         for idx in result[structure_count].StructureIndex[: structure_size]:
             plotted.append(idx)
             mx, my, mz = input_data[idx][:3]
+            # Get the points in the plane - JRMR
+            (mx,my,mz), se = closest_point_in_plane(np.array([a,b,c,d]), (mx,my,mz))
+            rmse = rmse + se
+            ######
             Xin.append(mx)
             Yin.append(my)
             Zin.append(mz)
         npXin = np.float32(Xin)
         npYin = np.float32(Yin)
         npZin = np.float32(Zin)
+        rmse = np.sqrt(rmse/len(npXin))
 
-        ax.scatter(npXin, npYin, npZin, s = 20, marker='o', 
+        ax.scatter(npXin, npYin, npZin, s = 20, marker='.', 
                    c= dict_color[structure_count % len(dict_color)], lw = 0)
-        '''
+
         print ("Strength: ", result[structure_count].StructureStrength, \
               "Size: ", structure_size,\
-              "Scale: ", result[structure_count].StructureScale)
-        '''
+              "Scale: ", result[structure_count].StructureScale, \
+               "RMSE: ", rmse, \
+               "dict_color:", dict_color[structure_count % len(dict_color)])
         structure_count += 1
 
     writebb8 = open("bb8_plane.txt", 'w')
-    Xin_k = []; Yin_k = []; Zin_k =[]
-    for idx in range(len(input_data)):
-        if not idx in plotted:
-            mx, my, mz = input_data[idx][:3]
-            Xin_k.append(mx)
-            Yin_k.append(my)
-            Zin_k.append(mz)
-            writebb8.write(str(mx) + " " + str(my) + " " + str(mz) + " 0 0 0\n")
+    # Plot the points not already plotted in one of the previous structures
+    #Xin_k = []; Yin_k = []; Zin_k =[]
+    #for idx in range(len(input_data)):
+    #    if not idx in plotted:
+    #        mx, my, mz = input_data[idx][:3]
+    #        Xin_k.append(mx)
+    #        Yin_k.append(my)
+    #        Zin_k.append(mz)
+    #        writebb8.write(str(mx) + " " + str(my) + " " + str(mz) + " 0 0 0\n")
             
-    npXin_k = np.float32(Xin_k)
-    npYin_k = np.float32(Yin_k)
-    npZin_k = np.float32(Zin_k)
-    ax.scatter(npXin_k, npYin_k, npZin_k, s = 1)
+    #npXin_k = np.float32(Xin_k)
+    #npYin_k = np.float32(Yin_k)
+    #npZin_k = np.float32(Zin_k)
+    #ax.scatter(npXin_k, npYin_k, npZin_k, s = 1)
     
     writebb8.close()
     
